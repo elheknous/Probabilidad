@@ -1,0 +1,330 @@
+---
+title: "Informe 2"
+author: "José Matus"
+date: "2023-06-02"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    collapsed: true
+    smooth_scroll: true
+    theme: journal
+    highlight: kate
+    df_print: paged
+    code_folding: show
+---
+
+```{r message = FALSE, warning = FALSE}
+library(dplyr)   
+library(ggplot2) 
+library(readxl) 
+library(moments) 
+library(tidyverse)
+library(nortest)
+library(gridExtra)
+library(fitdistrplus)
+```
+
+```{r}
+base_datos <- read_excel("C:/Users/jose/Downloads/MATUS_TORO_JOSE (1).xlsx")
+
+```
+
+# Propósito de la investigación
+
+El análisis presente en este informe será para comprender de mejor manera cómo afecta el NO2 (dióxido de nitrógeno) y el SO2 (dióxido de azufre) a la población, para esto, usaremos distribuciones de probabilidad y así predecir algunos acontecimientos que podrían afectar a las personas
+
+# Analisis NO2
+
+## Limpieza de datos
+
+```{r}
+cajaNo2 = base_datos %>%   
+  ggplot(aes(y=NO2)) +
+  geom_boxplot() +  
+  coord_flip()
+
+no2modificado = base_datos %>% filter(NO2 < 142) %>% 
+  ggplot(aes(y=NO2)) +
+  geom_boxplot() +  
+  coord_flip()
+
+grid.arrange(cajaNo2,no2modificado)
+
+
+```
+
+El primer grafico muestra los datos sin modificar mientras que el segundo muestra una versión sin los datos atípicos, analizando la muestra de NO2, podemos ver que los datos atípicos empiezan aparecer cuando la concentración de dióxido de nitrógeno supera los 142. Ejecutando el siguiente código:
+
+```{r}
+datos_atipicos = base_datos %>% filter(NO2 > 142)
+nrow(base_datos) - (nrow(base_datos) - nrow(datos_atipicos))
+```
+
+Se puede apreciar finalmente que hay 28 datos que superan la cifra anterior, considerando que el total es de 1201, un total de 28 datos solo equivale al 2.3% aproximadamente por ende, para este caso, trabajaremos sin estos datos ya que la información fue extraída a lo largo de un año y estos datos atípicos se pueden deber a casos muy puntuales donde el NO2 aumenta, como por ejemplo, un incendio o una gran aglomeración de autos
+
+## Definición del experimento (Binomial)
+
+Considerando que si el NO2 en el aire es mayor a 70 se considera dañino, si se toma una muestra de 30 estudios de NO2 ¿Cuál es la probabilidad de que en esta muestra como mucho haya 10 estudios de NO2 dañinos?
+
+Para resolver el experimento planteado primero debemos calcular la probabilidad de que el no2 sea dañino, para esto utilizamos el siguiente código:
+
+```{r}
+no2modificado = base_datos %>% filter(NO2 < 142)
+no2 = no2modificado
+
+base_datosNO2 = no2 %>% 
+  mutate(NO2_alto = ifelse(NO2 >= 70,1,0))
+probs = NULL
+n1 = round(length(base_datosNO2$NO2)*0.2,0)
+for (i in 1:1000) {
+  sample.aux = base_datosNO2$NO2_alto %>% sample(n1,replace=F)
+  probs = c(probs,mean(sample.aux))
+  
+}
+p = mean(probs)
+p
+
+
+```
+
+Una vez poseer la probabilidad tenemos:
+
+-   X : Estudios de NO2 que resultan ser dañinos
+
+-   Exito: NO2 dañino
+
+-   Fracaso: NO2 no dañino
+
+-   N = 30
+
+-   P = 0.35
+
+-   P(X \<= 10)
+
+Calculando:
+
+```{r}
+pbinom(10,30,p)
+```
+
+Finalmente, podemos concluir que la probabilidad de que haya 10 estudios dañinos en una muestra de tamaño 30 es del 50% aproximadamente
+
+
+## Definición del experimento (Poisson)
+
+Considerando que si el NO2 en el aire es menor o igual a 20 se considera estable y sabiendo que los estudios se realizan cada hora. Calcular cuál es la probabilidad de que hayan mas de 5 estudios estables en una hora dada
+
+Para resolver esto lo primero es calcular el valor de lambda:
+
+```{r}
+n1 = ceiling(dim(base_datosNO2)[1]*0.3)
+
+base_datosNO2 = no2 %>% 
+  mutate(NO2_estable = ifelse(NO2 <= 20,1,0))
+
+
+lambdas = NULL
+
+for (i in 1:100) {
+  sample.aux = base_datosNO2 %>%  slice(sample(1:dim(base_datosNO2)[1],size=n1)) %>%
+    group_by(hour) %>% dplyr::summarise(tasa = sum(NO2_estable))
+  tasa.aux = mean(sample.aux$tasa)
+  lambdas = c(lambdas,tasa.aux)
+  
+}
+
+lambda = ceiling(mean(lambdas))
+lambda 
+
+```
+
+Con el valor de lambda tenemos que:
+
+-   X: Estudios de NO2 que resultan ser estables
+
+-   Exito: NO2 estable
+
+-   Fracaso: NO2 no estable
+
+-   λ = 2
+
+-   P(X \> 5) = 1 -- P(X \<= 5)
+
+Calculando:
+
+```{r}
+1 - dpois(5,2)
+```
+
+Con esto podemos comprobar de que la probabilidad de que hayan 5 estudios estables en cierta hora es del 96% aproximadamente, es decir, la probabilidad de que NO2 sea estable es bastante alta
+
+# Analisis SO2
+
+## Limpieza de datos
+
+```{r}
+cajaSo2 = base_datos %>%   
+  ggplot(aes(y=SO2)) +
+  geom_boxplot() +  
+  coord_flip()
+
+so2modificado = base_datos %>% filter(SO2 < 36) %>% 
+  ggplot(aes(y=SO2)) +
+  geom_boxplot() +  
+  coord_flip()
+
+grid.arrange(cajaSo2,so2modificado)
+```
+
+```{r}
+base_datos = base_datos
+datos_atipicos = base_datos %>% filter(SO2 > 36)
+nrow(base_datos) - (nrow(base_datos) - nrow(datos_atipicos))
+```
+
+Considerando que la cantidad de datos atípicos es de 231 lo que representa casi un 20% de los datos totales, para este caso, si se trabajará con todos los datos
+
+## Definición del experimento (Binomial negativo)
+
+Dado que el valor normal del SO2 en el aire es de 20. Calcular la probabilidad de que sea necesario realizar 15 estudios para que se logren 5 mediciones normales
+
+```{r}
+base_datosSO2 = base_datos %>% 
+  mutate(SO2_alto = ifelse(SO2 >= 20,1,0))
+
+probs = NULL
+n1 = round(length(base_datosSO2$SO2)*0.2,0)
+for (i in 1:1000) {
+  sample.aux = base_datosSO2$SO2_alto %>% sample(n1,replace=F)
+  probs = c(probs,mean(sample.aux))
+  
+}
+p = mean(probs)
+p
+```
+
+Con el calculo de la probabilidad tenemos que:
+
+-   X : Numero de estudios hasta obtener que 5 sean mediciones normales
+
+-   exitos = k = 5
+
+-   fracasos = 15 - 5
+
+-   p = 0.37
+
+```{r}
+dnbinom(10,5,p)
+```
+
+Llegamos a la conclusión de que la probabilidad de éxito para obtener las 5 mediciones normales en los 15 estudios es del 7% aproximadamente
+
+# Casos continuos
+
+## NO2
+
+Para el NO2 haremos diferentes tipos de test para comprobar que distribución continua se ajusta mejor a los datos
+
+```{r message = FALSE, warning = FALSE}
+no2 = base_datos$NO2
+no2modificado = (base_datos %>% filter(NO2 < 142))$NO2
+
+no2 = no2modificado
+
+fw <-fitdist(no2,"weibull")
+fln<-fitdist(no2,"lnorm")
+fg <-fitdist(no2,"gamma")
+fn <-fitdist(no2,"norm")
+fe <-fitdist(no2,"exp")
+# fb <-fitdist(no2,"beta") no se mueve entre 0 y 1
+plot.legend<-c("Weibull","LogNormal","Gamma","Normal","Exponencial")
+
+```
+
+```{r}
+denscomp(list(fw,fln,fg,fn,fe), legendtext=plot.legend)
+
+```
+
+```{r}
+qqcomp(list(fw,fln,fg,fn,fe), legendtext=plot.legend)
+
+
+```
+
+```{r}
+cdfcomp(list(fw,fln,fg,fn,fe), legendtext=plot.legend)
+```
+
+```{r}
+ppcomp(list(fw,fln,fg,fn,fe), legendtext=plot.legend)
+```
+
+Para empezar, descartamos la distribución beta debido a que los datos no se mueven entre 1 y 0. Viendo los cuatro gráficos podemos descartar de forma la inmediata la distribución exponencial
+
+```{r}
+gofstat(list(fg,fn,fln,fw))
+
+```
+
+Con el criterio de Akaike podemos ver que la distribución que mas se acomoda es la de Weibull, sin embargo, la normal también se ajusta bien por lo tanto seguiremos al siguiente test con estas dos
+
+```{r message = FALSE, warning = FALSE}
+ks.test(no2,"pweibull",shape=fw$estimate[1],scale=fw$estimate[2])
+ks.test(no2,"pnorm",fn$estimate[1],fn$estimate[2]) 
+
+
+```
+
+Viendo los resultados del KS test y considerando los resultados anteriores, se puede decir con seguridad que la distribución continua que mejor se ajusta es la de Weibull debido a que tiene un valor mayor a 0.05 en el p-value
+
+## SO2
+
+Al igual que en el caso anterior, la función beta es descartada inmediata debido a que los datos no se mueven entre el 0 y el 1, teniendo en cuanta lo anterior, procederemos a realizar los mismos test que con el NO2:
+
+```{r}
+SO2 = base_datos$SO2
+fw <-fitdist(SO2,"weibull")
+fln<-fitdist(SO2,"lnorm")
+fg <-fitdist(SO2,"gamma")
+fn <-fitdist(SO2,"norm")
+fe <-fitdist(SO2,"exp")
+plot.legend<-c("Weibull","LogNormal","Gamma","Normal","Exponencial")
+```
+
+```{r}
+denscomp(list(fw,fln,fg,fn,fe), legendtext=plot.legend)
+
+```
+
+```{r}
+qqcomp(list(fw,fln,fg,fn,fe), legendtext=plot.legend)
+
+```
+
+```{r}
+cdfcomp(list(fw,fln,fg,fn,fe), legendtext=plot.legend)
+
+```
+
+```{r}
+ppcomp(list(fw,fln,fg,fn,fe), legendtext=plot.legend)
+
+```
+
+Viendo los gráficos podemos descartar la distribución normal, siendo esta la menos se ajusta visualmente
+
+```{r}
+gofstat(list(fg,fln,fw,fe))
+
+```
+
+Con el test de akaike podemos descartar 3 distribuciones para finalmente quedarnos con nuestra última candidata que será la normal estándar, para comprobar si realmente esta es una distribución que adapte bien a los datos, realizaremos el KS.test
+
+```{r}
+ks.test(SO2,"plnorm",meanlog=fln$estimate[1],sdlog=fln$estimate[2]) 
+```
+
+De todas las distribuciones estudiadas, la normal estándar es la que mejor se adapta a los datos, sin embargo, eso no quiere decir que sea una buena distribución para este caso. Al tener un p-value menor a 0.05 no se puede decir que la normal estándar ajustar bien los datos, por lo tanto, de todas las distribuciones continúas estudiadas para este informe ninguna sirve en este caso

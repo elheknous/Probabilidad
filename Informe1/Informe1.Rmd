@@ -1,0 +1,338 @@
+---
+title: "Informe 1"
+author: "José Matus"
+date: "2023-04-12"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    collapsed: true
+    smooth_scroll: true
+    theme: journal
+    highlight: kate
+    df_print: paged
+    code_folding: show
+---
+
+```{r message = FALSE, warning = FALSE}
+library(dplyr)   
+library(ggplot2) 
+library(readxl) 
+library(moments) 
+library(tidyverse)
+library(nortest)
+library(gridExtra)
+```
+
+# Introduccion
+
+Contexto de los datos:
+
+Los datos que se estudiaran fueron extraídos durante el año 2013, donde se extrajeron las variables del material particulado, dióxido de azufre, dióxido de nitrógeno, temperatura, lluvia y presión. Estos datos fueron extraídos a una determinada hora y mes desde marzo hasta diciembre.
+
+El propósito de este informe será analizar la temperatura según el mes de los datos entregados, se analizará el mes en el cual la media de temperatura fue más alta y más baja, luego se analizará la hora en que la temperatura alcanzo su mayor y menor valor respectivamente para así tener el mes y la hora en donde la temperatura fue más alta y más baja de todos los datos estudiados, Además se estudiará el nivel de SO2 Y NO2 durante el año y compararemos los resultados.
+
+
+# Base de datos
+
+```{r message = FALSE, warning = FALSE}
+library(readxl)
+baseInforme <- read_excel("C:/Users/jose/Downloads/MATUS_TORO_JOSE.xlsx")
+baseInforme
+```
+
+# Análisis de temperatura mensual
+
+## Tabla resumen
+
+```{r}
+baseTemp = baseInforme %>%     
+  group_by(month) %>% 
+  summarise(total = n(),
+            temperatura_min = min(TEMP),
+            mediana_temperatura = median(TEMP),
+            media_temperatura= mean(TEMP),
+            temperatura_max = max(TEMP),
+            desv.est = sd(TEMP),
+            asimetria = skewness(TEMP),
+            curtosis =kurtosis(TEMP)-3
+            )
+baseTemp
+```
+
+```{r message = FALSE, warning = FALSE}
+temperatura = baseInforme %>%   
+  ggplot(aes(y=TEMP)) +
+  geom_boxplot() +  
+  coord_flip() 
+temperatura
+summary(baseInforme$TEMP)
+
+```
+
+Considerando el diagrama de caja se puede ver que no existen datos atípicos, por lo tanto, para este caso, se estudiara la población completa de la temperatura
+
+## Análisis general
+
+```{r message = FALSE, warning = FALSE}
+histTemperatura <- ggplot(baseInforme, aes(x = TEMP))+
+  geom_histogram(aes(y = ..density..), colour = "black",fill="white")+
+  geom_density(alpha = .8, fill = "#FF6666")+
+  geom_vline(aes(xintercept=median(TEMP)),
+  color="blue", linetype="dashed", size=1)
+histTemperatura
+```
+
+```{r}
+baseInforme %>% 
+  summarise(media = mean(TEMP),
+            mediana = median(TEMP),
+            desv.est = sd(TEMP),
+            asimetria = skewness(TEMP),
+            curtosis =kurtosis(TEMP)-3)
+
+```
+
+Analizando el histograma de la temperatura y los datos entregados se llega a la conclusión de que los datos de la temperatura presentan un coeficiente de asimetría negativo, por lo tanto, la temperatura durante el estudio se concentra mayormente en temperaturas altas, además presenta una curtosis negativa lo que hace que el histograma se uno platicurtico
+
+## Análisis de Max. y Min.
+
+```{r message = FALSE, warning = FALSE}
+  
+HistogramaTemperaturasMin <- ggplot(baseTemp, aes(x = temperatura_min))+
+  geom_histogram(aes(y = ..density..), colour = "black",fill="white")+
+  geom_density(alpha = .8, fill = "#FF6666")+
+  geom_vline(aes(xintercept=median(temperatura_min)),
+  color="blue", linetype="dashed", size=1) 
+
+HistogramaTemperaturasMax <- ggplot(baseTemp, aes(x = temperatura_max))+
+  geom_histogram(aes(y = ..density..), colour = "black",fill="white")+
+  geom_density(alpha = .8, fill = "#FF6666")+
+  geom_vline(aes(xintercept=median(temperatura_max)),
+  color="blue", linetype="dashed", size=1)
+
+grid.arrange(HistogramaTemperaturasMin,HistogramaTemperaturasMax,ncol=2)
+```
+
+```{r}
+baseTemp %>% 
+  summarise(mediana_Min = median(temperatura_min),
+            asimetria_temperatura_minima = skewness(temperatura_min),
+            curtosis_temperatura_minima =kurtosis(temperatura_min)-3)
+baseTemp %>% 
+  summarise(mediana_Max = median(temperatura_max),
+            asimetria_temperatura_maxima = skewness(temperatura_max),
+            curtosis_temperatura_maxima =kurtosis(temperatura_max)-3)
+```
+
+Analizando cómo se comporta el promedio por mes de la temperatura mínima y máxima, como se muestra en la tabla resumen y observando los histogramas y las tablas anteriores, tenemos que:
+
+-   Sobre la temperatura mínima podemos ver que presenta un coeficiente de simetría muy cercano a cero, por lo tanto, se considera como una forma simétrica, también presenta una curtosis negativa lo que quiere decir que es platicurtica, de esto se puede concluir que las temperaturas más bajas de los meses estudiados no tienen una gran diferencia entre ellas y están distribuidas de forma muy equitativa a lo largo del tiempo.
+
+-   La temperatura máxima presenta un coeficiente de asimetría negativo y una curtosis negativa haciendo de este histograma uno asimétrico hacia la izquierda y platicurtico, lo que quiere decir que los datos están mas concentrados en temperaturas por sobre la media y su distribución sea menos equitativa que las de las temperaturas mínimas
+
+# Análisis con respecto a las horas
+
+A continuación, se analizarán dos muestras de la población, una correspondiente al mes que presento la media más alta de temperatura y la otra que presento la media más baja para, finalmente, estudiar la hora en que alcanzaron su mayor y menor valor de temperatura respectivamente
+
+## Análisis de la Tem. Max
+
+Primero se debe encontrar cual fue el mes con la media de temperatura más alta, a partir de este creamos una tabla con los valores de ese mes
+
+```{r}
+max(baseTemp$temperatura_max)
+```
+
+```{r}
+mesMayor <- baseInforme %>% filter(month == "7")
+mesMayor
+```
+
+```{r message = FALSE, warning = FALSE}
+histHoras <- ggplot(mesMayor, aes(x = TEMP))+
+  geom_histogram(aes(y = ..density..), colour = "black",fill="white")+
+  geom_density(alpha = .8, fill = "#FF6666")+
+  geom_vline(aes(xintercept=median(TEMP)),
+  color="blue", linetype="dashed", size=1)
+histHoras
+
+mesMayor%>% 
+  summarise(mediana = median(TEMP),
+            asimetria = skewness(TEMP),
+            curtosis =kurtosis(TEMP)-3)
+```
+
+Con los valores de asimetría y de curtosis que presenta el histograma se concluye que este tiene una asimetría hacia la derecha y tiene una forma platicurtica lo que quiere decir que la temperatura del mes 7 presentan una tendencia a concentrarse en lugares menores a la media.
+
+```{r}
+horaPromedio = mesMayor %>%
+  group_by(hour) %>%
+  summarise(total = n(),
+            mediaTemperatura = mean(TEMP))
+horaPromedio
+
+```
+
+```{r}
+max(horaPromedio$mediaTemperatura)
+```
+
+La tabla anterior muestra la temperatura media a cada hora, de aquí sacamos la media mas alta que corresponde a las 13 horas, con esto finalmente podemos decir que la media de temperatura mas alta es en el **mes 7 a las 13 horas**
+
+## Análisis de la Tem. Min.
+
+Usamos la misma lógica que en el caso pasado
+
+```{r}
+min(baseTemp$temperatura_min)
+```
+
+```{r}
+mesMenor <- baseInforme %>% filter(month == "12")
+mesMenor
+```
+
+```{r message = FALSE, warning = FALSE}
+histHoras <- ggplot(mesMenor, aes(x = TEMP))+
+  geom_histogram(aes(y = ..density..), colour = "black",fill="white")+
+  geom_density(alpha = .8, fill = "#FF6666")+
+  geom_vline(aes(xintercept=median(TEMP)),
+  color="blue", linetype="dashed", size=1)
+histHoras
+
+mesMenor%>% 
+  summarise(mediana = median(TEMP),
+            asimetria = skewness(TEMP),
+            curtosis =kurtosis(TEMP)-3)
+```
+
+Al igual que en la temperatura máxima el histograma presenta una asimetría a la derecha y una forma platicurtica, haciendo que la mayoría de datos se concentren en temperatura mas bajas
+
+```{r}
+horaPromedio = mesMenor %>%
+  group_by(hour) %>%
+  summarise(total = n(),
+            mediaTemperatura = mean(TEMP))
+horaPromedio
+
+```
+
+```{r}
+min(horaPromedio$mediaTemperatura)
+```
+
+Con las tablas anteriores podemos ver que la temperaturas más bajas en promedio se alcanzo a las 23 horas, por lo tanto se puede decir que las temperaturas mas bajas de los datos se alcanzaron en el **mes 12 a las 23 horas**
+
+# Analisis del SO2 y NO2
+
+## SO2
+
+```{r}
+so2original = baseInforme %>% 
+  ggplot(aes(y=SO2)) +
+  geom_boxplot() +  
+  coord_flip() 
+
+
+so2modificado = baseInforme %>% filter(SO2 < 38) %>% 
+  ggplot(aes(y=SO2)) +
+  geom_boxplot() +  
+  coord_flip() 
+
+grid.arrange(so2original, so2modificado, ncol = 1)
+```
+
+```{r}
+baseSO2 = baseInforme%>% 
+    summarise(mediana_original = median(SO2),
+              media_original = mean(SO2),
+            desv_original = sd(SO2))
+baseSO2
+
+baseSO2modificado = baseInforme%>% filter(SO2 < 38) %>% 
+    summarise(mediana_modificada = median(SO2),
+              media_modificada = mean(SO2),
+            desv_modificada = sd(SO2))
+baseSO2modificado
+
+```
+
+En la primera grafica se ven los datos del so2 sin modificar mientras que en la segunda se ven modificados, analizando las tablas de valores de ambos notamos que los datos atípicos alteran mucho el comportamiento de so2, por lo tanto, el estudio se realizara sin ellos
+
+## NO2
+
+```{r}
+no2original = baseInforme %>% 
+  ggplot(aes(y=NO2)) +
+  geom_boxplot() +  
+  coord_flip() 
+
+
+no2modificado = baseInforme %>% filter(NO2 < 142) %>% 
+  ggplot(aes(y=NO2)) +
+  geom_boxplot() +  
+  coord_flip() 
+
+grid.arrange(no2original, no2modificado, ncol = 1)
+```
+
+```{r}
+baseNO2 = baseInforme%>% 
+    summarise(mediana_original = median(NO2),
+              media_original = mean(NO2),
+            desv_original = sd(NO2))
+baseNO2
+
+baseNO2modificado = baseInforme%>% filter(NO2 < 142) %>% 
+    summarise(mediana_modificada = median(NO2),
+              media_modificada = mean(NO2),
+            desv_modificada = sd(NO2))
+baseNO2modificado
+
+```
+
+En este caso podemos ver que los valores atípicos del NO2 realmente no alteran de forma significativa la estadística, por lo tanto podemos trabajar con ellos
+
+## Comparación
+
+```{r message = FALSE, warning = FALSE}
+
+grid.arrange(so2modificado, no2original ,ncol =1)
+
+histSO2 <- ggplot(baseInforme %>% filter(SO2 < 38), aes(x = SO2))+
+  geom_histogram(aes(y = ..density..), colour = "black",fill="white")+
+  geom_density(alpha = .8, fill = "#FF6666")+
+  geom_vline(aes(xintercept=median(SO2)),
+  color="blue", linetype="dashed", size=1)
+
+
+histNO2 <- ggplot(baseInforme, aes(x = NO2))+
+  geom_histogram(aes(y = ..density..), colour = "black",fill="white")+
+  geom_density(alpha = .8, fill = "#FF6666")+
+  geom_vline(aes(xintercept=median(NO2)),
+  color="blue", linetype="dashed", size=1)
+
+
+grid.arrange(histSO2,histNO2,ncol=1)
+
+a = baseInforme %>% filter(SO2 < 38)
+a%>% 
+  summarise(asimetriaSO2 = skewness(SO2),
+            curtosisSO2 =kurtosis(SO2)-3)
+
+baseInforme%>%
+    summarise(asimetriaSO2 = skewness(baseInforme$NO2),
+            curtosisSO2 =kurtosis(baseInforme$NO2)-3)
+
+
+
+```
+
+De los histogramas se puede afirmar que:
+
+-   La moda, la mediana y la media del SO2 son bastante más pequeñas que la del NO2, lo que quiere decir que el NO2 está mucho más presente en el aire
+
+-   El SO2 tiende a tener valores menores a la media y estar bien distribuido a lo largo de la muestra al tener un histograma con asimetría positiva y platicurtico
+
+-   El NO2, al igual que el SO2, tiende a ser menor que la media, la diferencia radica que su histograma presenta una forma platicurtica ya que los datos están muy concentrados en un lugar
