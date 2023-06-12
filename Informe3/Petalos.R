@@ -38,7 +38,8 @@ ggpairs(data = plantas, #Graficos con recta que se adapta
 
 
 
-corrplot(cor(iris %>% dplyr::select(-Species)),method="color",      #CUDRO DE COLORES
+corrplot(cor(iris %>% dplyr::select(-Species)),
+         method="color",      #CUDRO DE COLORES
          addCoef.col = "black",   # agrega coefcientes 
          number.cex=1,  # tamaño coef
          tl.col="black",  # color nombres de col y rows
