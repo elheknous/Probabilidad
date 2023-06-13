@@ -39,7 +39,6 @@ summary(mod4)
 
 # modelo ejemplo MALO
 mod5 <- lm(Sa ~ S , data=cangrejos)
-
 summary(mod5)
 
 # modelo 4 pero con intercepto 0

@@ -8,7 +8,7 @@ library(readxl)
 
 # airquality ----
 
-aire = read_excel("C:/Users/jose/Downloads/airquality.xlsx")
+aire = read_excel("C:/Users/josem/Downloads/airquality.xlsx")
 
 aire
 
