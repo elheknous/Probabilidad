@@ -9,6 +9,7 @@ library(nortest)
 library(ggfortify)
 library(lmtest)
 
+
 siesta = read.csv(file.choose())
 siesta
 
