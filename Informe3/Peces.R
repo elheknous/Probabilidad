@@ -83,10 +83,10 @@ AIC(modf)
 outlierTest(mod4a)
 influencePlot(mod4a)
 
-mod4a = lm(Weight ~ .,data = peces %>%
-             dplyr :: select(-Length1,-Length2,-Width) %>%
-           slice(-143,-144,-145))
-summary(mod4a)
+#mod4a = lm(Weight ~ .,data = peces %>%
+ #            dplyr :: select(-Length1,-Length2,-Width) %>%
+  #         slice(-143,-144,-145))
+#summary(mod4a)
 
 
 
