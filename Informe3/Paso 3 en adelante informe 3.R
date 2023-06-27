@@ -48,6 +48,7 @@ vif(me)
 #multicolinealidad
 
 modelo2 = me
+summary(modelo2)
 
 ####################################################################
 ############################ PASO 4 ################################
@@ -62,7 +63,7 @@ summary(modelo3)
 ############################ PASO 4 ################################
 ####################################################################
 
-#nos quedamos con el modelo 3
+#nos quedamos con el modelo 2
 
 #ERROREES MODELO 2
 
@@ -70,15 +71,58 @@ outlierTest(modelo2)
 influencePlot(modelo2)
 puntosAtipicos <- influencePlot(modelo2)
 
+#QUE SIGINIFICA ESTO?
+nparam = 5
+n = nrow(aire)
+threshold = 4/((n-nparam-2))
+plot(modelo2,which = 4,cooks = threshold)
+
 
 inffluyentesAtipcos = as.numeric(rownames(a))
-modeloSinPunto = lm(PRES ~ . , data = aire %>% dplyr :: select(-PM2.5,-hour,-RAIN,hour)%>%
+modeloSinPunto2 = lm(PRES ~ . , data = aire %>% dplyr :: select(-PM2.5,-hour,-RAIN)%>%
                       dplyr :: slice(-inffluyentesAtipcos))
-summary(modeloSinPunto)
+summary(modeloSinPunto2)
 
 
-# Ya qie 
+summary(modelo2) #0.612
+summary(modeloSinPunto2) # 0.612
+# OBservando el modelo sin valores atipicos, el r^2 disminuye levemente, por lo tanto,
+#nos quedaremos con el MODELO2
 
+#SUPUESTOS
+
+#TEST DE NORMALIDAD 
+autoplot(modelo2)[2]
+plot(density(modelo2$residuals))
+nortest::lillie.test(modelo2$residuals) #0.02905
+
+#MUY CERCANO A CERO POR LO TANTO NO CUMPLE
+
+autoplot(modeloSinPunto2)[2]
+plot(density(modeloSinPunto2$residuals))
+nortest::lillie.test(modeloSinPunto2$residuals)#0.03661
+
+#modelo sin puntos atipicos si cumple supuestos de normalidad
+
+
+
+# INDDEPENDENCIA
+
+plot(modelo2,which = 1)
+autoplot(modelo2)[1]
+lmtest::dwtest(modelo2)
+
+
+plot(modeloSinPunto2,which = 1)
+autoplot(modeloSinPunto2)[1]
+lmtest::dwtest(modeloSinPunto2)
+
+#Homocedasticidad
+
+autoplot(modelo2)[1]
+lmtest::bptest(modelo2)
+
+#NO CUMPLE NINUGN SUPUESTO
 
 
 

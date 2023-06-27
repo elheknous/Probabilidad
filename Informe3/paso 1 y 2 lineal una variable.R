@@ -57,7 +57,7 @@ aire %>%
               col="purple",linewidth=2)
 
 
-summary(modelo1)
+summary(modelo1) #0.5304
 outlierTest(modelo1)
 puntosAtipicos <- influencePlot(modelo1)
 
@@ -83,9 +83,30 @@ autoplot(modelo1)[2]
 plot(density(modelo1$residuals))
 nortest::lillie.test(modelo1$residuals) #0.009622
 
+autoplot(modeloSinPunto)[2]
+plot(density(modeloSinPunto$residuals))
+nortest::lillie.test(modeloSinPunto$residuals) #0.00856
+
+
 #EL modelo es muy cercano a 0; no es preciso
 
+#INDEPENDENCIA
 
+plot(modelo1,which = 1)
+autoplot(modelo1)[1]
+
+lmtest::dwtest(modelo1)
+
+# muy cercano a cero no sirve
+
+#HOMOCEDASTECIDAD
+
+autoplot(modelo1)[1]
+lmtest::bptest(modelo1)
+
+# muy cercano a cero
+
+#NO CUMPLE NINGUNO DE LOS 3 SUPUESTOS
 
 
 
