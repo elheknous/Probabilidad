@@ -29,10 +29,12 @@ library(gamlss)
 library(ppcor)
 library(MASS)
 
-datos <- read_excel("C:/Users/jose/Downloads/MATUS_TORO_JOSE.xlsx")
+datos <- read_excel("C:/Users/josem/Downloads/MATUS_TORO_JOSE (1).xlsx")
 
 ```
 # Análisis de variable 
+
+La variable a analizar será la presión (PRES)
 
 ## Limpieza de datos
 
@@ -60,12 +62,7 @@ corrplot(cor(aire),
 
 ```
 
-chamullito de la variable
-
-# Modelos
-
-
-## Modelo 1 (Lineal simple)
+# Modelo 1 (Lineal simple)
 
 Para el modelo de regresión lineal simple escogeremos la variable TEMP (temperatura) como predictor ya que, como se puede observar en el cuadro anterior, esta es la variable que tiene una relación mas fuerte con la presión (-0.73) 
 
@@ -78,7 +75,7 @@ summary(modelo1) #0.5304
 Teniendo en cuenta el R^2 obtenido, a continuación crearemos un nuevo modelo que excluya los datos atípicos del modelo anterior para así comparar y ver que modelo predice mejor la variable de estudio
 
 ```{r message = FALSE, warning = FALSE}
-outlierTest(modelo1)
+#outlierTest(modelo1)
 puntosAtipicos <- influencePlot(modelo1)
 inffluyentesAtipcos = as.numeric(rownames(puntosAtipicos))
 modeloSinPuntoM1 = lm(PRES ~ TEMP , data = aire %>% 
@@ -93,17 +90,127 @@ summary(modeloSinPuntoM1) #0.5375
 mod1 = modeloSinPuntoM1
 ```
 
-### Supuestos 
+## Supuestos 
 
-## Modelo 2 (Lineal múltiple)
+### Normalidad
 
-### Supuestos 
+```{r}
+autoplot(mod1)[2]
+plot(density(mod1$residuals))
+nortest::lillie.test(mod1$residuals) #0.009622
+```
+
+### Independencia 
+
+```{r}
+plot(mod1,which = 1)
+autoplot(mod1)[1]
+
+lmtest::dwtest(mod1)
+```
+
+
+### Homocedasticidad
+
+```{r}
+
+autoplot(mod1)[1]
+lmtest::bptest(mod1)
+
+```
 
 
 
-## Modelo 3 (Backward)
+# Modelo 2 (Lineal múltiple)
 
-### Supuestos 
+A continuación, se realizará el modelo de regresión lineal múltiple empezando por el modelo que contempla todas las variables 
+
+```{r}
+modeloFull <- lm(PRES ~ .,data = aire) # 0.6166
+summary(modeloFull)
+vif(modeloFull)
+AIC(modeloFull)
+
+pcor(aire)
+
+#stimeate ceracno a  se sca
+#pvalu 
+#estadistici se saca lo mas alto
+```
+Ya que el modeloFull consta con un un vif muy bajo en cada variable podemos concluir que este no posee multicolinealidad por lo tanto no es necesario ajustar el modelo con
+el ppcor
+
+Observando el modeloFull, procederemos a quitar las variables con menos significancia, creando modelos individuales sin ellas, para luego crear un último modelo sin todas estas variables (hour, PM2.5, SO2, RAIN)
+
+```{r}
+
+ma = lm(PRES ~., data = aire %>% dplyr :: select(-PM2.5)) # 0.6169 
+summary(ma)
+vif(ma)
+AIC(ma) #7599
+
+mb = lm(PRES ~., data = aire %>% dplyr :: select(-RAIN)) # 0.6145
+summary(mb)
+vif(mb)
+AIC(mb) #7607
+
+mb2 = lm(PRES ~., data = aire %>% dplyr :: select(-RAIN,-PM2.5)) # 0.6148
+summary(mb2)
+vif(mb2)
+AIC(mb2) #7605
+
+mb3 = lm(PRES ~., data = aire %>% dplyr :: select(-RAIN,-PM2.5,-hour)) # 0.612
+summary(mb3)
+vif(mb3)
+AIC(mb3) #7605
+
+mc = lm(PRES ~., data = aire %>% dplyr :: select(-hour)) # 0.6135 
+summary(mc)
+vif(mc)
+AIC(mc)
+
+mc2 = lm(PRES ~., data = aire %>% dplyr :: select(-hour,-PM2.5)) # 0.6138
+summary(mc2)
+vif(mc2)
+AIC(mc2) #7608
+
+md = lm(PRES ~., data = aire %>% dplyr :: select(-SO2)) # 0.6136
+summary(md)
+vif(md)
+AIC(md)
+
+md2 = lm(PRES ~., data = aire %>% dplyr :: select(-SO2,-PM2.5)) # 0.6132
+summary(md2)
+vif(md2)
+AIC(md2)
+
+me = lm(PRES ~., data = aire %>% dplyr :: select(-PM2.5,-hour,-RAIN,-SO2)) # 0.6076
+summary(me)
+vif(me)
+AIC(me)
+
+
+```
+
+
+## Supuestos 
+
+### Normalidad
+
+### Independencia
+
+### Homocedasticidad
+
+
+# Modelo 3 (Backward)
+
+## Supuestos 
+
+### Normalidad
+
+### Independencia 
+
+### Homocedasticidad
 
 
 # Selección de modelo
