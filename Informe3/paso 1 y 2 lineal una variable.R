@@ -59,14 +59,14 @@ aire %>%
 
 summary(modelo1) #0.5304
 outlierTest(modelo1)
+
 puntosAtipicos <- influencePlot(modelo1)
 
-
-inffluyentesAtipcos = as.numeric(rownames(a))
+inffluyentesAtipcos = as.numeric(rownames(puntosAtipicos))
 modeloSinPunto = lm(PRES ~ TEMP , data = aire %>% 
               dplyr :: slice(-inffluyentesAtipcos))
 
-summary(modeloSinPunto) #0.5297
+summary(modeloSinPunto) #0.5375
 
 
 # Pa que  sirve esto?

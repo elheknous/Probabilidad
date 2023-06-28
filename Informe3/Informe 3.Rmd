@@ -1,0 +1,115 @@
+---
+title: "Informe 3"
+author: "José Matus"
+date: "2023-06-02"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    collapsed: true
+    smooth_scroll: true
+    theme: journal
+    highlight: kate
+    df_print: paged
+    code_folding: show
+---
+```{r message = FALSE, warning = FALSE}
+library(tidyverse)
+library(GGally)
+library(corrplot)
+library(dplyr)
+library(ggplot2)
+library(car)
+library(readxl)
+library(nortest)
+library(ggfortify)
+library(lmtest)
+library(gamlss)
+library(ppcor)
+library(MASS)
+
+datos <- read_excel("C:/Users/jose/Downloads/MATUS_TORO_JOSE.xlsx")
+
+```
+# Análisis de variable 
+
+## Limpieza de datos
+
+```{r message = FALSE, warning = FALSE}
+cajaPres = datos %>%   
+  ggplot(aes(y=PRES)) +
+  geom_boxplot() +  
+  coord_flip()
+cajaPres
+```
+
+Observando el diagrama de caja se puede notar que no existen datos atípicos, por lo tanto, se realizaran los modelos de regresión con la cantidad total de los datos 
+
+## Selección de la variable
+
+Para definir la variable, primero quitaremos la variable año de la base de datos debido a que los datos estudiados fueron extraídos todos del año 2013 por lo tanto, esta variable, no aporta nada al estudio que se desea realizar  
+```{r message = FALSE, warning = FALSE}
+aire <- datos %>% dplyr :: select(-year)
+corrplot(cor(aire),
+         method="color",      
+         addCoef.col = "black",  
+         number.cex=0.9,  
+         tl.col="black",  
+         tl.srt=45)
+
+```
+
+chamullito de la variable
+
+# Modelos
+
+
+## Modelo 1 (Lineal simple)
+
+Para el modelo de regresión lineal simple escogeremos la variable TEMP (temperatura) como predictor ya que, como se puede observar en el cuadro anterior, esta es la variable que tiene una relación mas fuerte con la presión (-0.73) 
+
+```{r message = FALSE, warning = FALSE}
+modelo1 <- lm(PRES ~ TEMP, data = aire)
+summary(modelo1) #0.5304
+
+```
+
+Teniendo en cuenta el R^2 obtenido, a continuación crearemos un nuevo modelo que excluya los datos atípicos del modelo anterior para así comparar y ver que modelo predice mejor la variable de estudio
+
+```{r message = FALSE, warning = FALSE}
+outlierTest(modelo1)
+puntosAtipicos <- influencePlot(modelo1)
+inffluyentesAtipcos = as.numeric(rownames(puntosAtipicos))
+modeloSinPuntoM1 = lm(PRES ~ TEMP , data = aire %>% 
+              dplyr :: slice(-inffluyentesAtipcos))
+
+summary(modeloSinPuntoM1) #0.5375
+```
+
+
+```{r message = FALSE, warning = FALSE}
+
+mod1 = modeloSinPuntoM1
+```
+
+### Supuestos 
+
+## Modelo 2 (Lineal múltiple)
+
+### Supuestos 
+
+
+
+## Modelo 3 (Backward)
+
+### Supuestos 
+
+
+# Selección de modelo
+
+
+# Predicción
+
+
+
