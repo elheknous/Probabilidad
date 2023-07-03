@@ -14,6 +14,7 @@ output:
     df_print: paged
     code_folding: show
 ---
+
 ```{r message = FALSE, warning = FALSE}
 library(tidyverse)
 library(GGally)
@@ -29,10 +30,11 @@ library(gamlss)
 library(ppcor)
 library(MASS)
 
-datos <- read_excel("C:/Users/josem/Downloads/MATUS_TORO_JOSE (1).xlsx")
+datos <- read_excel("C:/Users/jose/Downloads/MATUS_TORO_JOSE.xlsx")
 
 ```
-# Análisis de variable 
+
+# Análisis de variable
 
 La variable a analizar será la presión (PRES)
 
@@ -46,11 +48,12 @@ cajaPres = datos %>%
 cajaPres
 ```
 
-Observando el diagrama de caja se puede notar que no existen datos atípicos, por lo tanto, se realizaran los modelos de regresión con la cantidad total de los datos 
+Observando el diagrama de caja se puede notar que no existen datos atípicos, por lo tanto, se realizaran los modelos de regresión con la cantidad total de los datos
 
 ## Selección de la variable
 
-Para definir la variable, primero quitaremos la variable año de la base de datos debido a que los datos estudiados fueron extraídos todos del año 2013 por lo tanto, esta variable, no aporta nada al estudio que se desea realizar  
+Para definir la variable, primero quitaremos la variable año de la base de datos debido a que los datos estudiados fueron extraídos todos del año 2013 por lo tanto, esta variable, no aporta nada al estudio que se desea realizar
+
 ```{r message = FALSE, warning = FALSE}
 aire <- datos %>% dplyr :: select(-year)
 corrplot(cor(aire),
@@ -62,9 +65,11 @@ corrplot(cor(aire),
 
 ```
 
-# Modelo 1 (Lineal simple)
+# Modelos
 
-Para el modelo de regresión lineal simple escogeremos la variable TEMP (temperatura) como predictor ya que, como se puede observar en el cuadro anterior, esta es la variable que tiene una relación mas fuerte con la presión (-0.73) 
+## Modelo 1 (Lineal simple)
+
+Para el modelo de regresión lineal simple escogeremos la variable TEMP (temperatura) como predictor ya que, como se puede observar en el cuadro anterior, esta es la variable que tiene una relación mas fuerte con la presión (-0.73)
 
 ```{r message = FALSE, warning = FALSE}
 modelo1 <- lm(PRES ~ TEMP, data = aire)
@@ -72,7 +77,7 @@ summary(modelo1) #0.5304
 
 ```
 
-Teniendo en cuenta el R^2 obtenido, a continuación crearemos un nuevo modelo que excluya los datos atípicos del modelo anterior para así comparar y ver que modelo predice mejor la variable de estudio
+Teniendo en cuenta el R\^2 obtenido, a continuación crearemos un nuevo modelo que excluya los datos atípicos del modelo anterior para así comparar y ver que modelo predice mejor la variable de estudio
 
 ```{r message = FALSE, warning = FALSE}
 #outlierTest(modelo1)
@@ -82,141 +87,140 @@ modeloSinPuntoM1 = lm(PRES ~ TEMP , data = aire %>%
               dplyr :: slice(-inffluyentesAtipcos))
 
 summary(modeloSinPuntoM1) #0.5375
+
+
+aire %>% 
+  ggplot(aes(TEMP,PRES))+
+  geom_point()+
+  geom_abline(intercept = modeloSinPuntoM1$coefficients[1],
+              slope = modeloSinPuntoM1$coefficients[2],
+              col="purple",linewidth=2)
 ```
 
+Debido a que al quitar los datos atípicos el R\^2 aumenta ligeramente, escogeremos al modelo sin los puntos influyentes como el mod1, además de que al ver la gráfica pareciera que el modelo se ajusta bien
 
 ```{r message = FALSE, warning = FALSE}
 
 mod1 = modeloSinPuntoM1
 ```
 
-## Supuestos 
+## Modelo 2 (Lineal múltiple)
 
-### Normalidad
-
-```{r}
-autoplot(mod1)[2]
-plot(density(mod1$residuals))
-nortest::lillie.test(mod1$residuals) #0.009622
-```
-
-### Independencia 
-
-```{r}
-plot(mod1,which = 1)
-autoplot(mod1)[1]
-
-lmtest::dwtest(mod1)
-```
-
-
-### Homocedasticidad
-
-```{r}
-
-autoplot(mod1)[1]
-lmtest::bptest(mod1)
-
-```
-
-
-
-# Modelo 2 (Lineal múltiple)
-
-A continuación, se realizará el modelo de regresión lineal múltiple empezando por el modelo que contempla todas las variables 
+A continuación, se realizará el modelo de regresión lineal múltiple empezando por el modelo que contempla todas las variables
 
 ```{r}
 modeloFull <- lm(PRES ~ .,data = aire) # 0.6166
 summary(modeloFull)
 vif(modeloFull)
-AIC(modeloFull)
 
-pcor(aire)
-
-#stimeate ceracno a  se sca
-#pvalu 
-#estadistici se saca lo mas alto
 ```
-Ya que el modeloFull consta con un un vif muy bajo en cada variable podemos concluir que este no posee multicolinealidad por lo tanto no es necesario ajustar el modelo con
-el ppcor
+
+Ya que el modeloFull consta con un vif muy bajo en cada variable podemos concluir que este no posee multicolinealidad por lo tanto no es necesario ajustar el modelo con el ppcor
 
 Observando el modeloFull, procederemos a quitar las variables con menos significancia, creando modelos individuales sin ellas, para luego crear un último modelo sin todas estas variables (hour, PM2.5, SO2, RAIN)
 
-```{r}
+**Modelo sin PM2.5**
 
+```{r}
 ma = lm(PRES ~., data = aire %>% dplyr :: select(-PM2.5)) # 0.6169 
 summary(ma)
 vif(ma)
-AIC(ma) #7599
+```
 
+**Modelo sin RAIN**
+
+```{r}
 mb = lm(PRES ~., data = aire %>% dplyr :: select(-RAIN)) # 0.6145
 summary(mb)
 vif(mb)
-AIC(mb) #7607
+```
 
+**Modelo sin RAIN y PM2.5**
+
+```{r}
 mb2 = lm(PRES ~., data = aire %>% dplyr :: select(-RAIN,-PM2.5)) # 0.6148
 summary(mb2)
 vif(mb2)
-AIC(mb2) #7605
+```
 
+**Modelo sin RAIN, PM2.5 y hour**
+
+```{r}
 mb3 = lm(PRES ~., data = aire %>% dplyr :: select(-RAIN,-PM2.5,-hour)) # 0.612
 summary(mb3)
 vif(mb3)
-AIC(mb3) #7605
+```
 
+**Modelo sin hour**
+
+```{r}
 mc = lm(PRES ~., data = aire %>% dplyr :: select(-hour)) # 0.6135 
 summary(mc)
 vif(mc)
-AIC(mc)
+```
 
+**Modelo sin hour y PM2.5**
+
+```{r}
 mc2 = lm(PRES ~., data = aire %>% dplyr :: select(-hour,-PM2.5)) # 0.6138
 summary(mc2)
 vif(mc2)
-AIC(mc2) #7608
+```
 
+**Modelo sin SO2**
+
+```{r}
 md = lm(PRES ~., data = aire %>% dplyr :: select(-SO2)) # 0.6136
 summary(md)
 vif(md)
-AIC(md)
+```
 
+**Modelo sin SO2 y PM2.5**
+
+```{r}
 md2 = lm(PRES ~., data = aire %>% dplyr :: select(-SO2,-PM2.5)) # 0.6132
 summary(md2)
 vif(md2)
-AIC(md2)
+```
 
+**Modelo sin PM2.5, hour, RAIN y SO2**
+
+```{r}
 me = lm(PRES ~., data = aire %>% dplyr :: select(-PM2.5,-hour,-RAIN,-SO2)) # 0.6076
 summary(me)
 vif(me)
-AIC(me)
 
 
 ```
 
+Al crear los modelos mencionados anteriormente podemos notar que el vif en todos se mantiene muy cercano a uno, así que podemos asegurar que no existe una correlación en ningún modelo.
 
-## Supuestos 
+Al analizar el R\^2 de los modelos es fácil ver que no existe una gran variación en este, siendo el más alto 0.6169 y el más bajo 0.6076 así que, para este caso, seleccionaremos el modelo me como el mod2 ya que, pese al tener el R\^2 mas bajo, es el que posee menos variables lo que facilita bastante el análisis, además de que una variación del R\^2 del 1% aproximadamente es casi irrelevante
 
-### Normalidad
+```{r}
+puntosAtipicos <- influencePlot(me)
+inffluyentesAtipcos = as.numeric(rownames(puntosAtipicos))
+modeloSinPuntoM2 = lm(PRES ~ . , aire %>% dplyr :: select(-PM2.5,-hour,-RAIN,-SO2) %>% 
+              dplyr :: slice(-inffluyentesAtipcos))
 
-### Independencia
+summary(modeloSinPuntoM2) #0.6178
+```
 
-### Homocedasticidad
+Volviendo a realizar el mismo proceso que con el modelo anterior, notamos que el modelo sin errores posee un leve incremento de R\^2 así que utilizaremos este como el mod2
 
+```{r}
+mod2 = modeloSinPuntoM2
+```
 
-# Modelo 3 (Backward)
+## Modelo 3 (Backward)
 
-## Supuestos 
+```{r}
+mod3 <- stepAIC(lm(PRES ~ ., data = aire),
+                 direction = "backward")
+summary(mod3)
 
-### Normalidad
-
-### Independencia 
-
-### Homocedasticidad
-
+```
 
 # Selección de modelo
 
-
 # Predicción
-
-
-
