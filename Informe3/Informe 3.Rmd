@@ -5,7 +5,7 @@ date: "2023-06-02"
 output: 
   html_document:
     toc: true
-    toc_depth: 3
+    toc_depth: 4
     toc_float: true
     collapsed: true
     smooth_scroll: true
@@ -30,7 +30,7 @@ library(gamlss)
 library(ppcor)
 library(MASS)
 
-datos <- read_excel("C:/Users/jose/Downloads/MATUS_TORO_JOSE.xlsx")
+datos <- read_excel("C:/Users/josem/Downloads/MATUS_TORO_JOSE (1).xlsx")
 
 ```
 
@@ -223,4 +223,112 @@ summary(mod3)
 
 # Selección de modelo
 
+## Supuestos
+
+### Normalidad 
+
+#### mod1
+
+```{r}
+autoplot(mod1)[2]
+plot(density(mod1$residuals))
+nortest::lillie.test(mod1$residuals) #0.01092
+```
+
+#### mod2
+
+```{r}
+autoplot(mod2)[2]
+plot(density(mod2$residuals))
+nortest::lillie.test(mod2$residuals) #0.06737
+```
+
+#### mod3
+
+```{r}
+autoplot(mod3)[2]
+plot(density(mod3$residuals))
+nortest::lillie.test(mod3$residuals) #0.08422
+```
+
+
+### Independencia
+
+#### mod1
+
+```{r}
+
+plot(mod1,which = 1)
+lmtest::dwtest(mod1) #2.2e-16
+```
+
+#### mod2
+```{r}
+
+plot(mod2,which = 1)
+lmtest::dwtest(mod2)#2.2e-16
+```
+
+
+#### mod3
+```{r}
+
+plot(mod3,which = 1)
+  lmtest::dwtest(mod3) #0.0001623
+```
+
+
+### Homocedasticidad
+
+#### mod1
+
+```{r}
+autoplot(mod1)[1]
+lmtest::bptest(mod1)#0.0001177
+```
+
+#### mod2
+
+```{r}
+autoplot(mod2)[1]
+lmtest::bptest(mod2) #0.000336
+```
+
+
+#### mod3
+```{r}
+autoplot(mod3)[1]
+lmtest::bptest(mod3) #1.016e-06
+```
+
+
+## AIC
+
+### mod1
+
+```{r}
+AIC(mod1)
+```
+
+
+### mod2
+```{r}
+AIC(mod2)
+```
+
+
+### mod3
+```{r}
+AIC(mod3)
+```
+Analizando los supuestos y sus respectivos valores de sus p-value podemos observar que ningún modelo cumple con los supuestos de independencia y homocedasticidad, sin embargo, el mod2 y mod3 cumplen con el supuesto de normalidad, viendo el p-value de ambos, notamos que el mayor es del mod3, además de que al ver su AIC este el menor de los tres, por lo tanto, escogeremos al mod3 para predecir el comportamiento de la variable PRESS
+
 # Predicción
+
+```{r}
+newAire = data.frame(month = 4, hour = 18, SO2 = 14,
+                     NO2 = 17, TEMP = 13.8,RAIN =0.0)
+
+predict(mod3,newdata = newAire)
+```
+
