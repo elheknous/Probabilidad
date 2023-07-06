@@ -1,7 +1,7 @@
 ---
 title: "Informe 3"
 author: "José Matus"
-date: "2023-06-02"
+date: "05 de julio"
 output: 
   html_document:
     toc: true
@@ -30,25 +30,11 @@ library(gamlss)
 library(ppcor)
 library(MASS)
 
-datos <- read_excel("C:/Users/josem/Downloads/MATUS_TORO_JOSE (1).xlsx")
+datos <- read_excel("C:/Users/jose/Downloads/MATUS_TORO_JOSE.xlsx")
 
 ```
 
 # Análisis de variable
-
-La variable a analizar será la presión (PRES)
-
-## Limpieza de datos
-
-```{r message = FALSE, warning = FALSE}
-cajaPres = datos %>%   
-  ggplot(aes(y=PRES)) +
-  geom_boxplot() +  
-  coord_flip()
-cajaPres
-```
-
-Observando el diagrama de caja se puede notar que no existen datos atípicos, por lo tanto, se realizaran los modelos de regresión con la cantidad total de los datos
 
 ## Selección de la variable
 
@@ -65,11 +51,25 @@ corrplot(cor(aire),
 
 ```
 
+Al analizar el cuadro de correlación podemos observar que la variable que mayor relación presenta con las demás es la variable PRES, por ende, escogeremos esta como la variable dependiente ya que es probable de que las demás variables puedan predecirla de una buena forma
+
+## Limpieza de datos
+
+```{r message = FALSE, warning = FALSE}
+cajaPres = datos %>%   
+  ggplot(aes(y=PRES)) +
+  geom_boxplot() +  
+  coord_flip()
+cajaPres
+```
+
+Observando el diagrama de caja se puede notar que no existen datos atípicos, por lo tanto, se realizaran los modelos de regresión con la cantidad total de los datos
+
 # Modelos
 
-## Modelo 1 (Lineal simple)
+## Mod1 (Lineal simple)
 
-Para el modelo de regresión lineal simple escogeremos la variable TEMP (temperatura) como predictor ya que, como se puede observar en el cuadro anterior, esta es la variable que tiene una relación mas fuerte con la presión (-0.73)
+Para el modelo de regresión lineal simple escogeremos la variable TEMP (temperatura) como predictor ya que, como se pudo observar en el cuadro de correlación, esta es la variable que tiene una relación mas fuerte con la presión (-0.73)
 
 ```{r message = FALSE, warning = FALSE}
 modelo1 <- lm(PRES ~ TEMP, data = aire)
@@ -77,17 +77,20 @@ summary(modelo1) #0.5304
 
 ```
 
-Teniendo en cuenta el R\^2 obtenido, a continuación crearemos un nuevo modelo que excluya los datos atípicos del modelo anterior para así comparar y ver que modelo predice mejor la variable de estudio
+Teniendo en cuenta el R\^2 obtenido, a continuación crearemos un nuevo modelo que excluya los datos atípicos del modelo anterior puesto que, como se puede ver en el grafico siguiente, existen algunos datos atípicos que tal vez estén afectando el modelo
 
 ```{r message = FALSE, warning = FALSE}
-#outlierTest(modelo1)
 puntosAtipicos <- influencePlot(modelo1)
 inffluyentesAtipcos = as.numeric(rownames(puntosAtipicos))
 modeloSinPuntoM1 = lm(PRES ~ TEMP , data = aire %>% 
               dplyr :: slice(-inffluyentesAtipcos))
 
 summary(modeloSinPuntoM1) #0.5375
+```
 
+Debido a que al quitar los datos atípicos el R\^2 aumenta ligeramente, escogeremos al modelo sin los puntos influyentes como el mod1, además de que al ver la gráfica que aparecerá a continuación pareciera que el modelo se ajusta bien
+
+```{r message = FALSE, warning = FALSE}
 
 aire %>% 
   ggplot(aes(TEMP,PRES))+
@@ -97,14 +100,20 @@ aire %>%
               col="purple",linewidth=2)
 ```
 
-Debido a que al quitar los datos atípicos el R\^2 aumenta ligeramente, escogeremos al modelo sin los puntos influyentes como el mod1, además de que al ver la gráfica pareciera que el modelo se ajusta bien
-
 ```{r message = FALSE, warning = FALSE}
 
 mod1 = modeloSinPuntoM1
+
+
 ```
 
-## Modelo 2 (Lineal múltiple)
+Finalmente, el mod1 se definiría de la siguiente forma:
+
+PRES = 1019.16734 - 0.68166(TEMP)
+
+Donde el valor de la presión disminuye en 0.68166 cada vez que la temperatura suba una unidad y en caso de que esta sea cero, la presión tomaria el valor de 1019.16734
+
+## Mod2 (Lineal múltiple)
 
 A continuación, se realizará el modelo de regresión lineal múltiple empezando por el modelo que contempla todas las variables
 
@@ -193,9 +202,9 @@ vif(me)
 
 ```
 
-Al crear los modelos mencionados anteriormente podemos notar que el vif en todos se mantiene muy cercano a uno, así que podemos asegurar que no existe una correlación en ningún modelo.
+Al crear los modelos mencionados anteriormente podemos notar que el vif en todos se mantiene muy cercano a uno, así que podemos asegurar que no existe multicolinealidad en ningún modelo.
 
-Al analizar el R\^2 de los modelos es fácil ver que no existe una gran variación en este, siendo el más alto 0.6169 y el más bajo 0.6076 así que, para este caso, seleccionaremos el modelo me como el mod2 ya que, pese al tener el R\^2 mas bajo, es el que posee menos variables lo que facilita bastante el análisis, además de que una variación del R\^2 del 1% aproximadamente es casi irrelevante
+Al analizar el R\^2 de los modelos es fácil ver que no existe una gran variación en este, siendo el más alto 0.6169 y el más bajo 0.6076 así que, para este caso, seleccionaremos el modelo **me** como el mod2 ya que, pese al tener el R\^2 mas bajo, es el que posee menos variables lo que facilita bastante el análisis, además de que una variación de R\^2 del 1% aproximadamente es casi irrelevante
 
 ```{r}
 puntosAtipicos <- influencePlot(me)
@@ -212,20 +221,53 @@ Volviendo a realizar el mismo proceso que con el modelo anterior, notamos que el
 mod2 = modeloSinPuntoM2
 ```
 
-## Modelo 3 (Backward)
+Finalmente, el mod2 se definiría de la siguiente forma:
+
+PRES = 1.015e+03 + 8.009e-01(month) - 3.241e-02(NO2) - 6.654e-01(TEMP)
+
+Donde a medida que el valor de TEMP y NO2 aumenta el valor de PRES disminuye, mientras que si el valor de month aumenta la presión también aumenta y si el valor de las tres variables anteriores es cero, la presión seria de 1.015e+03
+
+## Mod3 (Backward)
 
 ```{r}
-mod3 <- stepAIC(lm(PRES ~ ., data = aire),
+modelo3 <- stepAIC(lm(PRES ~ ., data = aire),
                  direction = "backward")
-summary(mod3)
+summary(modelo3)
+```
+
+Modelo sin datos atipicos
+
+```{r}
+puntosAtipicos3 <- influencePlot(modelo3)
 
 ```
+
+```{r}
+inffluyentesAtipcos3 = as.numeric(rownames(puntosAtipicos3))
+modeloSinPuntoM3 = lm(PRES ~ . , aire %>% dplyr :: select(-PM2.5) %>% 
+              dplyr :: slice(-inffluyentesAtipcos3))
+
+summary(modeloSinPuntoM3) #0.6237
+
+```
+
+Al igual que en los dos casos anteriores, el modelo sin datos atípicos muestra un leve incremento en el R\^2 por ende escogeremos este
+
+```{r}
+mod3 = modeloSinPuntoM3
+```
+
+Finalmente, el mod3 se definiría de la siguiente forma:
+
+PRES = 1.014e+03 + 8.068e-01(month) + 7.531e-02(hour) + 2.621e-02(SO2) - 4.251e-02(NO2) - 6.537e-01(TEMP) - 1.184e+00(RAIN)
+
+Las variables month, hour y SO2 en este caso aumentan el valor de PRES, mientras que las variables NO2, TEMP y rain disminuyen la temperatura, en caso de que todas las variables sean cero el valor de la presión será 1.014e+03
 
 # Selección de modelo
 
 ## Supuestos
 
-### Normalidad 
+### Normalidad
 
 #### mod1
 
@@ -235,6 +277,14 @@ plot(density(mod1$residuals))
 nortest::lillie.test(mod1$residuals) #0.01092
 ```
 
+-   Las colas de la distribución se alejan de la recta de los cuantiles normales en el grafico Q-Q
+
+-   El grafico de densidad no muestra una distribución normal, al concentrarse un poco mas hacia la derecha, estando su limite izquierdo mas cerca del cero y el limite derecho mas elevado
+
+-   El p-value es menor a 0.05
+
+-   **No cumple con el supuesto de normalidad**
+
 #### mod2
 
 ```{r}
@@ -243,14 +293,29 @@ plot(density(mod2$residuals))
 nortest::lillie.test(mod2$residuals) #0.06737
 ```
 
+-   Las colas de la distribución no se alejan tanto de la recta de los cuantiles normales en el grafico Q-Q
+
+-   El grafico de densidad muestra una semejanza a una distribución normal
+
+-   El p-value es mayor a 0.05
+
+-   **Cumple con el supuesto de normalidad**
+
 #### mod3
 
 ```{r}
 autoplot(mod3)[2]
 plot(density(mod3$residuals))
-nortest::lillie.test(mod3$residuals) #0.08422
+nortest::lillie.test(mod3$residuals) #0.03052
 ```
 
+-   Las colas de la distribución parecen acercarse un poco a la recta de los cuantiles normales en el grafico Q-Q
+
+-   El grafico de la densidad no muestra un comportamiento normal
+
+-   El p-value es menor a 0.05
+
+-   **No cumple con el supuesto de normalidad**
 
 ### Independencia
 
@@ -262,21 +327,33 @@ plot(mod1,which = 1)
 lmtest::dwtest(mod1) #2.2e-16
 ```
 
+-   El p-value es muy cercano a cero
+
+-   **No cumple con el supuesto de independencia**
+
 #### mod2
+
 ```{r}
 
 plot(mod2,which = 1)
 lmtest::dwtest(mod2)#2.2e-16
 ```
 
+-   El p-value es muy cercano a cero
+
+-   **No cumple con el supuesto de independencia**
 
 #### mod3
+
 ```{r}
 
 plot(mod3,which = 1)
   lmtest::dwtest(mod3) #0.0001623
 ```
 
+-   El p-value es muy cercano a cero
+
+-   **No cumple con el supuesto de independencia**
 
 ### Homocedasticidad
 
@@ -285,7 +362,14 @@ plot(mod3,which = 1)
 ```{r}
 autoplot(mod1)[1]
 lmtest::bptest(mod1)#0.0001177
+
 ```
+
+-   El grafico de los residuos no muestra una nube aleatoria de puntos debido a que se puede ver una tendencia de ir hacia el centro
+
+-   El p-value es muy cercano a cero
+
+-   **No cumple con el supuesto de homocedasticidad**
 
 #### mod2
 
@@ -294,13 +378,24 @@ autoplot(mod2)[1]
 lmtest::bptest(mod2) #0.000336
 ```
 
+-   No muestra aleatoriedad en los residuos puesto que estos se concentran muy a la izquierda
+
+-   El p-value es muy cercano a cero
+
+-   **No cumple con el supuesto de homocedasticidad**
 
 #### mod3
+
 ```{r}
 autoplot(mod3)[1]
 lmtest::bptest(mod3) #1.016e-06
 ```
 
+-   No muestra aleatoriedad en los residuos puesto que estos se concentran entre el centro y la izquierda
+
+-   El p-value es muy cercano a cero
+
+-   **No cumple con el supuesto de homocedasticidad**
 
 ## AIC
 
@@ -310,18 +405,19 @@ lmtest::bptest(mod3) #1.016e-06
 AIC(mod1)
 ```
 
-
 ### mod2
+
 ```{r}
 AIC(mod2)
 ```
 
-
 ### mod3
+
 ```{r}
 AIC(mod3)
 ```
-Analizando los supuestos y sus respectivos valores de sus p-value podemos observar que ningún modelo cumple con los supuestos de independencia y homocedasticidad, sin embargo, el mod2 y mod3 cumplen con el supuesto de normalidad, viendo el p-value de ambos, notamos que el mayor es del mod3, además de que al ver su AIC este el menor de los tres, por lo tanto, escogeremos al mod3 para predecir el comportamiento de la variable PRESS
+
+En resumen, analizando los supuestos, sus gráficas y sus respectivos valores de sus p-value, podemos observar que ningún modelo cumple con los supuestos de independencia y homocedasticidad, sin embargo, el mod2 si cumple con el supuesto de normalidad, además, notamos que el AIC es muy parecido para los tres, por lo tanto, este no es un factor muy relevante al escoger un modelo así que, finalmente, seleccionaremos al mod2 para predecir el comportamiento de la variable PRES
 
 # Predicción
 
@@ -332,3 +428,8 @@ newAire = data.frame(month = 4, hour = 18, SO2 = 14,
 predict(mod3,newdata = newAire)
 ```
 
+```{r}
+aire%>% dplyr :: select(PRES)
+```
+
+La predicción arrojo un valor con sentido comparándolo con los demás valores de PRES en la base de datos, sin embargo, este no es un valor confiable debido a la poca exactitud del modelo conseguido

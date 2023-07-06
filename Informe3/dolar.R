@@ -14,7 +14,7 @@ library(MASS)
 
 
 
-dolar <- read_excel("C:/Users/josem/Downloads/dolar.xlsx")
+dolar <- read_excel("C:/Users/jose/Downloads/dolar.xlsx")
 view(dolar)
 
 cor(dolar)

@@ -38,7 +38,7 @@ El propósito de este informe será analizar la temperatura según el mes de los
 
 ```{r message = FALSE, warning = FALSE}
 library(readxl)
-baseInforme <- read_excel("C:/Users/jose/Downloads/MATUS_TORO_JOSE.xlsx")
+baseInforme <- read_excel("C:/Users/jose/Downloads/MATUS_TORO_JOSE.xlsx") %>% dplyr :: select(PRES)
 baseInforme
 ```
 
